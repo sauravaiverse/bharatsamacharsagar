@@ -634,25 +634,57 @@ def transform_image(image_input_bytes, title_text, category_text, output_categor
         # Draw only the brand name in Hindi at the bottom right
         brand_text = "भारत समाचार सागर"
         brand_font_size = max(int(target_content_height * 0.045), 28)
-        if DEFAULT_FONT_PATH:
-            try:
-                brand_font = ImageFont.truetype(DEFAULT_FONT_PATH, brand_font_size)
-            except (IOError, OSError):
+        
+        # Try to find a suitable Hindi font
+        hindi_font_path = None
+        system = platform.system().lower()
+        
+        if 'darwin' in system:  # macOS
+            hindi_font_path = "/Library/Fonts/NotoSansDevanagari-Regular.ttf"
+            if not os.path.exists(hindi_font_path):
+                hindi_font_path = "/System/Library/Fonts/Supplemental/Mangal.ttf"
+        elif 'windows' in system:  # Windows
+            hindi_font_path = "C:/Windows/Fonts/Mangal.ttf"
+        else:  # Linux
+            hindi_font_path = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
+            if not os.path.exists(hindi_font_path):
+                hindi_font_path = "/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf"
+
+        try:
+            if hindi_font_path and os.path.exists(hindi_font_path):
+                brand_font = ImageFont.truetype(hindi_font_path, brand_font_size)
+                logger.info(f"Using Hindi font: {hindi_font_path}")
+            else:
+                # Fallback to default font if Hindi font not found
                 brand_font = ImageFont.load_default()
-        else:
+                logger.warning("Hindi font not found, using default font")
+        except Exception as e:
+            logger.error(f"Error loading Hindi font: {e}")
             brand_font = ImageFont.load_default()
 
         draw = ImageDraw.Draw(img)
         padding = int(target_content_width * 0.03)
+        
+        # Get text size with proper font
         try:
             bbox = brand_font.getbbox(brand_text)
             text_width = bbox[2] - bbox[0]
             text_height = bbox[3] - bbox[1]
         except AttributeError:
             text_width, text_height = brand_font.getsize(brand_text)
+            
         x = target_content_width - text_width - padding
         y = final_canvas_height - text_height - padding
-        create_text_with_shadow(draw, (x, y), brand_text, brand_font, (255,255,255,255), (0,0,0,180), (2,2))
+        
+        # Draw text with enhanced shadow for better visibility
+        shadow_offset = (3, 3)  # Increased shadow offset
+        shadow_color = (0, 0, 0, 200)  # More opaque shadow
+        text_color = (255, 255, 255, 255)  # Pure white text
+        
+        # Draw shadow first
+        draw.text((x + shadow_offset[0], y + shadow_offset[1]), brand_text, font=brand_font, fill=shadow_color)
+        # Draw main text
+        draw.text((x, y), brand_text, font=brand_font, fill=text_color)
 
         output_filename = f"{safe_filename}_{int(time.time())}.jpg"
         output_full_path = os.path.join(IMAGE_OUTPUT_FOLDER, output_category_folder, output_filename)
