@@ -631,80 +631,28 @@ def transform_image(image_input_bytes, title_text, category_text, output_categor
             except Exception as e:
                 logger.error(f"Error applying branding logo: {e}")
 
-        selected_font = ImageFont.load_default()
-        title_font_size = max(int(target_content_height * 0.035), 20)
-
+        # Draw only the brand name in Hindi at the bottom right
+        brand_text = "भारत समाचार सागर"
+        brand_font_size = max(int(target_content_height * 0.045), 28)
         if DEFAULT_FONT_PATH:
             try:
-                selected_font = ImageFont.truetype(DEFAULT_FONT_PATH, title_font_size)
-            except (IOError, OSError) as e:
-                logger.warning(f"Could not load specified font '{DEFAULT_FONT_PATH}': {e}. Falling back to PIL default.")
+                brand_font = ImageFont.truetype(DEFAULT_FONT_PATH, brand_font_size)
+            except (IOError, OSError):
+                brand_font = ImageFont.load_default()
         else:
-            logger.warning("No default font path specified. Using PIL default font. Text quality on images may be basic.")
+            brand_font = ImageFont.load_default()
 
         draw = ImageDraw.Draw(img)
-
-        max_text_width_for_title = int(target_content_width * 0.45)
-        horizontal_padding_text = int(target_content_width * 0.02)
-
-        def get_wrapped_text_lines(text, font, max_width):
-            lines = []
-            if not text: return lines
-            words = text.split()
-            if not words: return lines
-
-            current_line = words[0]
-            for word in words[1:]:
-                test_line = f"{current_line} {word}".strip()
-                try:
-                    bbox = font.getbbox(test_line)
-                    text_width = bbox[2] - bbox[0]
-                except AttributeError:
-                    text_width = font.getsize(test_line)[0]
-
-                if text_width <= max_width:
-                    current_line = test_line
-                else:
-                    lines.append(current_line)
-                    current_line = word
-            lines.append(current_line)
-            return lines
-
-        wrapped_title_lines = get_wrapped_text_lines(title_text, selected_font, max_text_width_for_title)
-
-        total_text_height_for_placement = 0
-        line_height_list = []
-        for line in wrapped_title_lines:
-            try:
-                bbox = selected_font.getbbox(line)
-                line_height = bbox[3] - bbox[1]
-                line_height_list.append(line_height + int(title_font_size * 0.2))
-            except AttributeError:
-                line_height_list.append(title_font_size + 3)
-
-        total_text_height_for_placement = sum(line_height_list)
-
-        bottom_align_y_coord = final_canvas_height - horizontal_padding_text
-        current_y_text_draw = bottom_align_y_coord - total_text_height_for_placement
-
-        min_y_for_text = target_content_height + horizontal_padding_text
-        if current_y_text_draw < min_y_for_text:
-            current_y_text_draw = min_y_for_text
-
-        for i, line in enumerate(wrapped_title_lines):
-            try:
-                bbox = selected_font.getbbox(line)
-                line_width = bbox[2] - bbox[0]
-            except AttributeError:
-                line_width = selected_font.getsize(line)[0]
-
-            x_text_draw = target_content_width - horizontal_padding_text - line_width
-
-            create_text_with_shadow(
-                draw, (x_text_draw, current_y_text_draw), line, selected_font,
-                (255, 255, 255, 255), (0, 0, 0, 180), (2, 2)
-            )
-            current_y_text_draw += line_height_list[i]
+        padding = int(target_content_width * 0.03)
+        try:
+            bbox = brand_font.getbbox(brand_text)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+        except AttributeError:
+            text_width, text_height = brand_font.getsize(brand_text)
+        x = target_content_width - text_width - padding
+        y = final_canvas_height - text_height - padding
+        create_text_with_shadow(draw, (x, y), brand_text, brand_font, (255,255,255,255), (0,0,0,180), (2,2))
 
         output_filename = f"{safe_filename}_{int(time.time())}.jpg"
         output_full_path = os.path.join(IMAGE_OUTPUT_FOLDER, output_category_folder, output_filename)
@@ -1571,7 +1519,7 @@ def main():
                 logger.warning("GEMINI_API_KEY or RESEARCH_MODEL/CONTENT_MODEL is not initialized. Skipping AI content generation.")
                 generated_blog_markdown = (
                     f"title: {consolidated_topic}\n"
-                    f"description: {consolidated_description.replace('\"', '&quot;').replace('\\n', ' ').strip()[:155].replace('\'', '&apos;')}\n"
+                    f"description: {consolidated_description.replace('\"', '&quot;').replace('\\n', ' ').strip()[:155].replace(\"'\", '&apos;')}\n"
                     f"date: {datetime.now().strftime('%Y-%m-%d')}\n"
                     f"categories: [{category}]\n"
                     f"tags: [{category}, news]\n"
