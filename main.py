@@ -1570,7 +1570,7 @@ def main():
                 logger.warning("GEMINI_API_KEY or RESEARCH_MODEL/CONTENT_MODEL is not initialized. Skipping AI content generation.")
                 generated_blog_markdown = (
                     f"title: {consolidated_topic}\n"
-                    f"description: {consolidated_description.replace('\"', '&quot;').replace('\\n', ' ').strip()[:155].replace(\"'\", '&apos;')}\n"
+                    f"description: {consolidated_description.replace('\"', '&quot;').replace('\\n', ' ').strip()[:155].replace('\'', '&apos;')}\n"
                     f"date: {datetime.now().strftime('%Y-%m-%d')}\n"
                     f"categories: [{category}]\n"
                     f"tags: [{category}, news]\n"
