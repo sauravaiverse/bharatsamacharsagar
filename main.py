@@ -1092,8 +1092,9 @@ def generate_enhanced_html_template(title, description, keywords, image_url_for_
                                   category, article_url_for_disclaimer, published_date):
     """Generate enhanced HTML template with better styling and comprehensive SEO elements."""
 
-    escaped_title_html = title.replace('&', '&').replace('"', '"').replace("'", ''')
-    escaped_description_html = description.replace('&', '&').replace('"', '"').replace("'", ''')
+    # Escape HTML special characters
+    escaped_title_html = title.replace('&', '&amp;').replace('"', '&quot;').replace("'", '&apos;')
+    escaped_description_html = description.replace('&', '&amp;').replace('"', '&quot;').replace("'", '&apos;')
 
     json_safe_title = json.dumps(title)[1:-1]
     json_safe_description = json.dumps(description)[1:-1]
